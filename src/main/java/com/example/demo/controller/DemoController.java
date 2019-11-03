@@ -12,17 +12,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.AddressDTO;
 import com.example.demo.dto.UserDTO;
+import com.example.demo.exception.ResourceNotFoundException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 
 @RestController("SpringBoOtDemoController")
 @Api(tags = {"SpringBootDemoAPI"})
 @RequestMapping("springboot/demo/v1")
 public class DemoController {
 	 private static final Logger logger = LoggerFactory.getLogger(DemoController.class);
+	 private static final Cache userCache = CacheManager.getInstance().getCache("ehCacheDemo");
 	
 	@RequestMapping(value="name" , method=RequestMethod.GET)
 	@ApiOperation(value = "API to Get username ", response = String.class)
@@ -51,7 +56,9 @@ public class DemoController {
         //Save user Object
 		//return ResponseEntity.status(HttpStatus.OK).body(userdto);
 		//return ResponseEntity.status(HttpStatus.OK).body(userdto);
-		throw new NullPointerException();
+		userCache.put(new Element(userdto.getId(),userdto));
+		return ResponseEntity.status(HttpStatus.OK).body(userdto);
+		//throw new NullPointerException();
 	}
 
 	@RequestMapping(value = "/user/{id}", method = RequestMethod.GET)
@@ -65,9 +72,16 @@ public class DemoController {
 })
 	public ResponseEntity<Object> getUser(@PathVariable("id") final long id) {
 		//service method to get object byId object
-		
-		UserDTO useDTO = new UserDTO("Deepak",1l,new AddressDTO("Sector-78" , "Noida"));
-		return ResponseEntity.status(HttpStatus.OK).body(useDTO);
+		Element cacheElement = userCache.get(id);
+		Long userId = null;
+		if(cacheElement != null) {
+			System.out.println("user exist in cache");
+			UserDTO useDTO = (UserDTO)cacheElement.getObjectValue();
+			//UserDTO useDTO = new UserDTO("Deepak",userId,new AddressDTO("Sector-78" , "Noida"));
+			return ResponseEntity.status(HttpStatus.OK).body(useDTO);
+		}
+		logger.info("User does not exist in the System for id :{} ", id);
+		throw new ResourceNotFoundException("User does not exist in the System");
 	}
 
 }
