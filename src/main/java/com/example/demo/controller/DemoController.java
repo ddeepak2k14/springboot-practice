@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.AddressDTO;
 import com.example.demo.dto.UserDTO;
+import com.example.demo.email.EmailUtil;
 import com.example.demo.exception.ResourceNotFoundException;
 
 import io.swagger.annotations.Api;
@@ -82,6 +83,23 @@ public class DemoController {
 		}
 		logger.info("User does not exist in the System for id :{} ", id);
 		throw new ResourceNotFoundException("User does not exist in the System");
+	}
+	
+	
+	@RequestMapping(value = "/sendEmail/{emailId}", method = RequestMethod.GET)
+	@ApiOperation(value = "API to send email", response = String.class)
+	@ApiResponses({
+        @ApiResponse(code = 200, message = "OK"),
+        @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 424, message = "Failed Dependency"),
+        @ApiResponse(code = 500, message = "Internal Server Error - Server-side error.")
+})
+	public ResponseEntity<Object> sendEmail (@PathVariable("emailId") final String emailId) throws Exception {
+		logger.info("Sendinf Email to :{} ", emailId);
+		EmailUtil.sendEmail(emailId);
+		return ResponseEntity.status(HttpStatus.OK).body("Email Sent Sucessfully to "+emailId);
+		
 	}
 
 }
